@@ -4,7 +4,7 @@ import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 
-st.set_page_config(page_title='ABENDESSEN', page_icon='🍽️')
+st.set_page_config(page_title='SPEISEPLAN', page_icon='🍽️')
 
 credentials_info = st.secrets["gcp_service_account"]
 
