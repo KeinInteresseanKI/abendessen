@@ -64,7 +64,7 @@ def update_gsheet_and_rerun(df_to_write):
     df_for_gsheet.sort_values(by='date', ascending=True, inplace=True)
 
     # 13ヶ月以上のデータを削除するコード
-    today = pd.Timestamp('today').normalize()
+    today = pd.Timestamp('today')
     cutoff_date = today - pd.Timedelta(days=397)
     #df_for_gsheet['date'] = pd.to_datetime(df_for_gsheet['date'], errors='coerce')
     df_for_gsheet = df_for_gsheet[df_for_gsheet['date']>= cutoff_date].reset_index(drop=True)
@@ -292,7 +292,7 @@ elif mode == 'Speise vor einem Jahr - für 2 M.':
     df = load_df()
 
     # 12ヶ月前、13ヶ月前のデータを表示するコード
-    today = pd.Timestamp('today')
+    today = pd.Timestamp('today').normalize()
     tag_vor_01 = today - pd.Timedelta(days=396)
     tag_vor_02 = today - pd.Timedelta(days=334)
 
