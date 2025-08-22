@@ -64,7 +64,7 @@ def update_gsheet_and_rerun(df_to_write):
     df_for_gsheet.sort_values(by='date', ascending=True, inplace=True)
 
     # 13ヶ月以上のデータを削除するコード
-    today = pd.Timestamp('today')
+    today = pd.Timestamp('today').normalize()
     cutoff_date = today - pd.Timedelta(days=397)
     #df_for_gsheet['date'] = pd.to_datetime(df_for_gsheet['date'], errors='coerce')
     df_for_gsheet = df_for_gsheet[df_for_gsheet['date']>= cutoff_date].reset_index(drop=True)
