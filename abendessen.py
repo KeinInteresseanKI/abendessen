@@ -137,7 +137,7 @@ if mode == 'Speiseplan der Woche':
                 st.write(f'###### {row['Speise05']}')
 
     st.markdown('---')
-    today = pd.Timestamp('today')
+    today = pd.Timestamp('today').normalize()
     to_day = today - pd.Timedelta(days=1)
     tag_in_7 = today + pd.Timedelta(days=7)
 
@@ -258,7 +258,7 @@ elif mode == 'Neuer Speiseplan / Änderung':
     st.write('##### Änderung: Speiseplan der Woche')
     st.info('Zum Ändern: Tippe auf eine Zelle, gib eine neue Speise ein und bestätige mit „👍 Ändern“')
 
-    today = pd.Timestamp('today')
+    today = pd.Timestamp('today').normalize()
     to_day = today - pd.Timedelta(days=1)
     tag_in_7 = today + pd.Timedelta(days=7)
 
