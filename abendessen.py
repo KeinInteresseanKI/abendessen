@@ -102,7 +102,7 @@ st.header('🍽️ SPEISEPLAN')
 
 mode = st.radio('Mode auswählen',['Speiseplan der Woche',
                                   'Neuer Speiseplan / Änderung',
-                                  'Speise vor einem Jahr - für 2 M.',
+                                  'Speisenarchiv',
                                   'Datumssuche nach Speise'], horizontal=True)
 
 if mode == 'Speiseplan der Woche':
@@ -141,7 +141,8 @@ if mode == 'Speiseplan der Woche':
     to_day = today - pd.Timedelta(days=1)
     tag_in_7 = today + pd.Timedelta(days=7)
 
-    df = df[(df['date'] >= to_day) & (df['date'] <= tag_in_7)]
+    # 真下のコード　場合によっては「today」部分を「to_day」に変える必要があるかも
+    df = df[(df['date'] >= today) & (df['date'] <= tag_in_7)]
 
     df.sort_values(by='date', ascending=True, inplace=True)
 
@@ -263,7 +264,8 @@ elif mode == 'Neuer Speiseplan / Änderung':
     tag_in_7 = today + pd.Timedelta(days=7)
 
     # 1週間分のデータをフィルタリング
-    df_this_week = df[(df['date'] >= to_day) & (df['date'] <= tag_in_7)].copy()
+    # 真下のコード　場合によっては「today」部分を「to_day」に変える必要があるかも
+    df_this_week = df[(df['date'] >= today) & (df['date'] <= tag_in_7)].copy()
     df_this_week.sort_values(by='date', ascending=True, inplace=True)
     df_this_week_for_display = df_this_week[['Datum', 'Speise01', 'Speise02', 'Speise03', 'Speise04', 'Speise05']]
 
@@ -275,7 +277,8 @@ elif mode == 'Neuer Speiseplan / Änderung':
     edited_df_this_week['date'] = pd.to_datetime(edited_df_this_week['Datum'].str.split(' ').str[0], format='%d.%m.%Y', errors='coerce')
 
     # 元のdfから今週のデータを削除し、編集後のデータを結合する
-    df_without_this_week = df[(df['date'] < to_day) | (df['date'] > tag_in_7)]
+    # 真下のコード　場合によっては「today」部分を「to_day」に変える必要があるかも    
+    df_without_this_week = df[(df['date'] < today) | (df['date'] > tag_in_7)]
     df_updated = pd.concat([df_without_this_week, edited_df_this_week], ignore_index=True)
 
     # 編集内容が元のデータと異なっているか確認
@@ -287,24 +290,51 @@ elif mode == 'Neuer Speiseplan / Änderung':
         except Exception as e:
             st.error(f"Fehler beim Speichern der Änderungen: {e}")
 
-elif mode == 'Speise vor einem Jahr - für 2 M.':
-    # 指定した月の１ヶ月分のおかず表示部分
-    df = load_df()
+elif mode == 'Speisenarchiv':
+    st.write('##### 🫕 Was gab’s damals? Stöbere durch frühere Speisepläne!')
 
-    # 12ヶ月前、13ヶ月前のデータを表示するコード
     today = pd.Timestamp('today').normalize()
     tag_vor_01 = today - pd.Timedelta(days=396)
-    tag_vor_02 = today - pd.Timedelta(days=334)
+    tag_vor_02 = today - pd.Timedelta(days=1)
 
-    df = df[(df['date'] >= tag_vor_01) & (df['date'] <= tag_vor_02)]
+    # ❶ メッセージ表示：条件付き（先に書く＝上に表示される）
+    if "add_date_input01" not in st.session_state or st.session_state["add_date_input01"] is None \
+        or "add_date_input02" not in st.session_state or st.session_state["add_date_input02"] is None:
+        st.info(
+            f"Wähle einen Zeitraum aus! Verfügbar: {tag_vor_01.strftime('%d.%m.%Y')} - {tag_vor_02.strftime('%d.%m.%Y')}"
+        )
 
-    # 12ヶ月前、13ヶ月前のデータを表示するコード（終わり）
+    # ❷ 日付入力欄（常に表示、上記より後ろ＝下に表示）
+    col1, col2 = st.columns(2)
+    with col1:
+        datum_01 = st.date_input(
+            'von:',
+            value=None,
+            min_value=tag_vor_01.date(),
+            max_value=tag_vor_02.date(),
+            format="DD.MM.YYYY",
+            key="add_date_input01")
+    with col2:
+        datum_02 = st.date_input(
+            'bis:',
+            value=None,
+            min_value=tag_vor_01.date(),
+            max_value=tag_vor_02.date(),
+            format="DD.MM.YYYY",
+            key="add_date_input02")
 
-    # pandasデータフレームを日付順に並べ替えるコード
-    df.sort_values(by='date', ascending=True, inplace=True)
-    # 指定した月の１ヶ月分のおかず表示部分 Ende
-    st.write('##### 🫕 Was gab’s damals? 2 Monate ab vor einem Jahr!')
-    st.dataframe(df[['Datum', 'Speise01', 'Speise02', 'Speise03', 'Speise04', 'Speise05']], hide_index=True)
+    # ❸ 両方日付が入力されたときのみデータを表示
+    if datum_01 is not None and datum_02 is not None:
+        datum_64_01 = pd.to_datetime(datum_01)
+        datum_64_02 = pd.to_datetime(datum_02)
+
+        df = load_df()
+        df = df[(df['date'] >= datum_64_01) & (df['date'] <= datum_64_02)]
+        df.sort_values(by='date', ascending=True, inplace=True)
+
+        st.dataframe(
+            df[['Datum', 'Speise01', 'Speise02', 'Speise03', 'Speise04', 'Speise05']],
+            hide_index=True)
 
 elif mode == 'Datumssuche nach Speise':
     df = load_df()    
@@ -312,16 +342,16 @@ elif mode == 'Datumssuche nach Speise':
     
     search = st.text_input('Gib eine Speise ein!', key=None)
     if search:
-        result = df[(df['Speise01'] == search) |
-                    (df['Speise02'] == search) |
-                    (df['Speise03'] == search) |
-                    (df['Speise04'] == search) |
-                    (df['Speise05'] == search)]
+        result = df[df['Speise01'].str.contains(search, case=False) |
+                    df['Speise02'].str.contains(search, case=False) |
+                    df['Speise03'].str.contains(search, case=False) |
+                    df['Speise04'].str.contains(search, case=False) |
+                    df['Speise05'].str.contains(search, case=False)]
 
         if not result.empty:
             # 検索キーワードを含むセルに色を付ける関数
             def highlight_search(s):
-                return['background-color: #fff3b0' if search in str(v) else '' for v in s]
+                return['background-color: #fff3b0' if search.lower() in str(v).lower() else '' for v in s]
 
             # スタイルを適用
             styled_df = result[['Datum', 'Speise01', 'Speise02', 'Speise03', 'Speise04', 'Speise05']].style.apply(highlight_search, axis=1)
